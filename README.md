@@ -1,110 +1,189 @@
-# 🔍 Wireshark Network Attack Analysis (TCP SYN Scan + Web Probing)
-
-## 🎯 Objective
-
-Analyze a real PCAP file to identify network scanning and web probing activity against a target server.
+# 🔍 Wireshark Network Attack Analysis.
 
 ---
 
-## 🧠 Scenario
+## 🧾 Summary
 
-A public-facing server is receiving abnormal traffic from multiple external sources. The objective is to determine whether this activity represents a security threat.
-
----
-
-## 🔎 Key Findings
-
-### 🔹 Target Identification
-
-* **Victim Server:** 203.161.44.208
-* Multiple external IPs initiated connections to this server
+In this lab, I analyzed a PCAP file using Wireshark to investigate suspicious traffic targeting a server.
+The analysis revealed **TCP SYN scanning followed by web probing activity**, which represents a real-world attack pattern.
 
 ---
 
-### 🔹 TCP SYN Scan Detection
-
-* Observed a high volume of TCP SYN packets
-* Behavior pattern:
-
-  * SYN → RST, ACK → Closed port
-  * SYN → SYN-ACK → Open port
-
-👉 Indicates **TCP SYN scanning activity**
+# 🧠 Investigation Steps
 
 ---
 
-### 🔹 Ports Targeted
+## 🔹 Step 1: Identify Suspicious Activity
 
-Attackers probed multiple services:
+I started by checking network conversations to identify unusual traffic patterns.
 
-* 22 (SSH)
-* 25 (SMTP)
-* 80 (HTTP)
-* 443 (HTTPS)
-* 636 (LDAPS)
-* 8080 / 8443
+📸 **Conversations View**
+![Step 1](screenshots/01-conversations.png)
 
----
+🔍 Observation:
 
-### 🔹 Web Probing Activity
+* Multiple external IPs communicating with a single host
+* High number of small packet exchanges
 
-Observed HTTP requests targeting sensitive and vulnerable paths:
-
-* `/.env`
-* `/.git/config`
-* `/vendor/phpunit/...`
-* `/admin`, `/login`
-
-Responses:
-
-* Mostly **404 Not Found**
-* Some **200 OK**
-
-👉 Indicates **web application probing**
+👉 This indicated potential **scanning activity**
 
 ---
 
-## 🧭 Attack Timeline
+## 🔹 Step 2: Filter Suspicious IP Activity
+
+Applied filter:
+
+```
+ip.addr == 203.161.44.208
+```
+
+📸 **Filtered Traffic**
+![Step 2](screenshots/02-syn-scan.png)
+
+🔍 Observation:
+
+* High volume of TCP packets
+* Repeated connection attempts
+
+👉 Identified **target server under attack**
+
+---
+
+## 🔹 Step 3: Detect SYN Scan Behavior
+
+Applied filter:
+
+```
+tcp.flags.syn == 1 && tcp.flags.ack == 0
+```
+
+📸 **SYN Scan Packets**
+![Step 3](screenshots/03-syn-scan-filter.png)
+
+🔍 Observation:
+
+* Multiple SYN packets from different IPs
+* Targeting various ports
+
+👉 Confirmed **TCP SYN scanning**
+
+---
+
+## 🔹 Step 4: Analyze Port Responses
+
+📸 **RST Responses (Closed Ports)**
+![Step 4](screenshots/03-rst-response.png)
+
+📸 **SYN-ACK Responses (Open Ports)**
+![Step 4-2](screenshots/04-syn-ack.png)
+
+🔍 Observation:
+
+* RST, ACK → Closed ports
+* SYN-ACK → Open ports
+
+👉 Attackers identifying available services
+
+---
+
+## 🔹 Step 5: Identify Targeted Ports
+
+📸 **TCP Port Activity**
+![Step 5](screenshots/04-tcp.png)
+
+🔍 Observation:
+
+* Ports targeted:
+
+  * 22 (SSH)
+  * 25 (SMTP)
+  * 80 (HTTP)
+  * 443 (HTTPS)
+  * 636 (LDAPS)
+  * 8080 / 8443
+
+👉 Indicates **service discovery attempt**
+
+---
+
+## 🔹 Step 6: Identify Victim and Attack Pattern
+
+📸 **Multiple Sources → One Target**
+![Step 6](screenshots/01-conversations.png)
+
+🔍 Observation:
+
+* Many IPs → One server
+
+👉 This confirms:
+
+* Server is **victim**
+* External IPs are **attackers**
+
+---
+
+## 🔹 Step 7: Detect Web Probing Activity
+
+Applied filter:
+
+```
+http
+```
+
+📸 **HTTP Requests**
+![Step 7](screenshots/05-http-probing.png)
+
+🔍 Observation:
+
+* Requests to:
+
+  * `/.env`
+  * `/.git/config`
+  * `/vendor/phpunit/...`
+  * `/admin`, `/login`
+
+* Responses:
+
+  * 404 Not Found
+  * 200 OK
+
+👉 Indicates **web vulnerability probing**
+
+---
+
+# 🧭 Attack Timeline
 
 1. External hosts initiated TCP SYN scan
 2. Server responded with port status
 3. Attackers identified open services
-4. HTTP probing activity began
-5. Attempts to access sensitive files and vulnerabilities observed
+4. Web probing activity began
+5. Attempts made to access sensitive files and vulnerabilities
 
 ---
 
-## 🚨 Conclusion
+# 🚨 Conclusion
 
 The server **203.161.44.208** is under active attack involving:
 
-* TCP SYN scanning (reconnaissance phase)
-* Web probing (vulnerability discovery phase)
+* TCP SYN scanning (reconnaissance)
+* Web probing (vulnerability discovery)
 
-This behavior is consistent with **automated attack tools attempting to identify exploitable services**.
+👉 This behavior matches **automated attacker tools used in real-world environments**
 
 ---
 
-## 🛠 Tools Used
+# 🛠 Tools Used
 
 * Wireshark
 
 ---
 
-## 💡 Skills Demonstrated
+# 💡 Skills Demonstrated
 
-* Network traffic analysis
+* Packet analysis
 * TCP flag interpretation
 * Port scanning detection
 * Web attack identification
-* Incident response analysis
+* Incident investigation
 
 ---
-
-## 📸 Screenshots
-
-Refer to the images in this repository for evidence of:
-
-* SYN scanning
-* Port responses
-* Web probing activity
